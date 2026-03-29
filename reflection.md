@@ -5,7 +5,55 @@
 **a. Initial design**
 
 - Briefly describe your initial UML design.
+
+My initial UML design included four main classes: Owner, Pet, Task, and Scheduler.
+
 - What classes did you include, and what responsibilities did you assign to each?
+
+The Owner class is responsible for storing the user’s basic information and available time for pet care. The Pet class stores information about the pet, such as name and type. The Task class represents individual pet care activities, including name, duration, and priority. The Scheduler class is responsible for organizing tasks and generating a daily plan based on available time and task priority.
+
+### My initial UML Diagram:
+
+
+```mermaid id="r1a2b3"
+classDiagram
+class Owner {
+    +name
+    +available_time
+    +update_info()
+    +set_available_time()
+}
+
+class Pet {
+    +name
+    +type
+    +update_pet_info()
+}
+
+class Task {
+    +name
+    +duration
+    +priority
+    +update_task()
+    +display_task()
+}
+
+class Scheduler {
+    +list_of_tasks
+    +available_time
+    +add_task()
+    +remove_task()
+    +generate_plan()
+    +sort_tasks_by_priority()
+}
+
+Owner "1" --> "many" Pet : owns
+Pet "1" --> "many" Task : has
+Scheduler "1" --> "many" Task : manages
+Owner "1" --> "1" Scheduler : uses
+```
+
+
 
 **b. Design changes**
 

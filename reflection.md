@@ -58,7 +58,13 @@ Owner "1" --> "1" Scheduler : uses
 **b. Design changes**
 
 - Did your design change during implementation?
+
+Yes, the design changed during implementation.
+
 - If yes, describe at least one change and why you made it.
+
+Initially, tasks did not include time or date attributes. These were added later to support sorting, scheduling, and conflict detection. This change made it possible to organize tasks more realistically and detect when tasks happen at the same time.
+Another change was updating the task completion logic to support recurring tasks. The mark_complete() method was modified to create the next occurrence for daily and weekly tasks. This improved the system by making it more automated and closer to real-life scheduling.
 
 ---
 
@@ -67,12 +73,22 @@ Owner "1" --> "1" Scheduler : uses
 **a. Constraints and priorities**
 
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
+
+The scheduler considers task time, priority level, duration, and completion status. It also considers the owner’s available time when building a daily plan. Tasks with higher priority are considered first when creating the schedule. Time is used to sort and detect conflicts, while duration is used to fit tasks into the available schedule.
+
 - How did you decide which constraints mattered most?
+
+Priority and available time were chosen as the most important because they directly affect what gets done in a day.
 
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+
+One tradeoff is that conflict detection only checks for exact matching start times. It does not detect overlapping task durations. This keeps the system simple and easy to understand, but it may miss some real scheduling conflicts.
+
 - Why is that tradeoff reasonable for this scenario?
+
+This tradeoff is reasonable because it reduces complexity and keeps the scheduler beginner-friendly while still catching the most common conflicts.
 
 ---
 

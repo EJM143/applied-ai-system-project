@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 
 class Owner:
     def __init__(self, name, available_time):
@@ -71,10 +72,15 @@ class Task:
     description: str = ""
     frequency: str = "daily"  # e.g. "daily", "weekly", "as needed"
     completed: bool = False
+    time: str = ""  # scheduled start time in "HH:MM" format
+    date: str = ""  # scheduled date in "YYYY-MM-DD" format
 
     def mark_complete(self):
-        """Mark this task as completed."""
+        """Mark this task as completed and return the next occurrence if recurring."""
         self.completed = True
+        if self.frequency in ("daily", "weekly"):
+            return self.reschedule()
+        return None
 
     def mark_incomplete(self):
         """Mark this task as not completed."""
@@ -92,6 +98,16 @@ class Task:
             self.description = description
         if frequency is not None:
             self.frequency = frequency
+
+    def reschedule(self):
+        """Return a new Task scheduled for the next occurrence based on frequency."""
+        if not self.date or self.frequency not in ("daily", "weekly"):
+            return None
+        current = datetime.strptime(self.date, "%Y-%m-%d")
+        delta = timedelta(days=1) if self.frequency == "daily" else timedelta(weeks=1)
+        next_date = (current + delta).strftime("%Y-%m-%d")
+        return Task(self.name, self.duration, self.priority,
+                    self.description, self.frequency, date=next_date, time=self.time)
 
     def display_task(self):
         """Print a formatted one-line summary of the task."""
@@ -114,6 +130,16 @@ class Scheduler:
         """Add a task directly to the scheduler's task list."""
         self.list_of_tasks.append(task)
 
+    def complete_task(self, task_name):
+        """Mark a task complete by name and auto-add the next occurrence if recurring."""
+        for task in self.list_of_tasks:
+            if task.name == task_name:
+                next_task = task.mark_complete()
+                if next_task:
+                    self.add_task(next_task)
+                return
+        print(f"Task '{task_name}' not found.")
+
     def remove_task(self, task_name):
         """Remove a task from the scheduler's list by name."""
         self.list_of_tasks = [t for t in self.list_of_tasks if t.name != task_name]
@@ -121,6 +147,42 @@ class Scheduler:
     def sort_tasks_by_priority(self):
         """Return tasks sorted by priority descending (3 = high first)."""
         return sorted(self.list_of_tasks, key=lambda t: t.priority, reverse=True)
+
+    def sort_by_time(self):
+        """Return tasks sorted by scheduled start time (HH:MM), tasks with no time go last."""
+        return sorted(self.list_of_tasks, key=lambda t: t.time if t.time else "23:59")
+
+    def filter_by_pet(self, pet_name):
+        """Return all tasks belonging to the pet with the given name."""
+        for pet in self.owner.pets:
+            if pet.name == pet_name:
+                return pet.get_tasks()
+        return []
+
+    def schedule_next_occurrences(self):
+        """Return a list of new Tasks rescheduled for their next occurrence."""
+        next_tasks = []
+        for task in self.list_of_tasks:
+            next_task = task.reschedule()
+            if next_task:
+                next_tasks.append(next_task)
+        return next_tasks
+
+    def detect_conflicts(self):
+        """Return a list of tasks that share the same scheduled time, and print a warning for each."""
+        seen = {}
+        conflicts = []
+        for task in self.list_of_tasks:
+            if not task.time:
+                continue
+            if task.time in seen:
+                conflicts.append(task)
+                if seen[task.time] not in conflicts:
+                    conflicts.append(seen[task.time])
+                print(f"[WARNING] Conflict at {task.time}: '{seen[task.time].name}' and '{task.name}'")
+            else:
+                seen[task.time] = task
+        return conflicts
 
     def generate_plan(self):
         """

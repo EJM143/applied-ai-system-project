@@ -51,3 +51,22 @@ This project includes improved scheduling features:
 - Conflict detection warns when tasks share the same time
 
 These features make the scheduler more efficient and realistic for daily pet care planning.
+
+## Testing PawPal+
+
+Run all tests with:
+```
+python -m pytest
+```
+
+### What is tested
+- Task sorting by time and priority
+- Recurring tasks (daily and weekly)
+- Conflict detection (duplicate task times)
+- Scheduling logic with limited available time
+- Edge cases (empty pets, no tasks, zero time available)
+
+### Confidence Level
+★★★★★ (5/5)
+
+All automated tests passed successfully.

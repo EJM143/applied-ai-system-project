@@ -8,6 +8,9 @@ st.title("🐾 PawPal+")
 if "owner" not in st.session_state:
     st.session_state.owner = Owner("Jordan", available_time=60)
 
+if "scheduler" not in st.session_state:
+    st.session_state.scheduler = Scheduler(st.session_state.owner)
+
 st.markdown(
     """
 Welcome to the PawPal+ starter app.
@@ -50,6 +53,7 @@ species = st.selectbox("Species", ["dog", "cat", "other"])
 if st.button("Add pet"):
     new_pet = Pet(pet_name, species)
     st.session_state.owner.add_pet(new_pet)
+    st.session_state.scheduler = Scheduler(st.session_state.owner)
 
 if st.session_state.owner.pets:
     st.write("Pets:")
@@ -71,13 +75,30 @@ with col3:
     priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
 
 if st.button("Add task"):
-    st.session_state.tasks.append(
-        {"title": task_title, "duration_minutes": int(duration), "priority": priority}
+    priority_map = {"low": 1, "medium": 2, "high": 3}
+
+    task = Task(
+        task_title,
+        int(duration),
+        priority_map[priority]
     )
+
+    st.session_state.tasks.append(task)
+    st.session_state.scheduler.add_task(task)
 
 if st.session_state.tasks:
     st.write("Current tasks:")
-    st.table(st.session_state.tasks)
+
+    display_tasks = [
+        {
+            "Task": t.name,
+            "Duration": t.duration,
+            "Priority": t.priority
+        }
+        for t in st.session_state.tasks
+    ]
+
+    st.table(display_tasks)
 else:
     st.info("No tasks yet. Add one above.")
 
@@ -87,9 +108,31 @@ st.subheader("Build Schedule")
 st.caption("This button should call your scheduling logic once you implement it.")
 
 if st.button("Generate schedule"):
-    st.warning(
-        "Not implemented yet. Next step: create your scheduling logic (classes/functions) and call it here."
-    )
+    scheduler = st.session_state.scheduler
+
+    plan = scheduler.generate_plan()
+    conflicts = scheduler.detect_conflicts()
+
+    if conflicts:
+        st.warning("⚠ Conflicts detected (same time tasks exist).")
+
+    if plan:
+        st.success("Schedule generated successfully!")
+
+        st.write("### Your Plan")
+        st.table([
+            {
+                "Task": t.name,
+                "Duration": t.duration,
+                "Priority": t.priority
+            }
+            for t in plan
+        ])
+
+        st.write(f"Total time used: {sum(t.duration for t in plan)} min")
+    else:
+        st.info("No tasks fit into available time or no tasks exist.")
+
     st.markdown(
         """
 Suggested approach:

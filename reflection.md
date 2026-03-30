@@ -12,49 +12,6 @@ My initial UML design included four main classes: Owner, Pet, Task, and Schedule
 
 The Owner class is responsible for storing the user’s basic information and available time for pet care. The Pet class stores information about the pet, such as name and type. The Task class represents individual pet care activities, including name, duration, and priority. The Scheduler class is responsible for organizing tasks and generating a daily plan based on available time and task priority.
 
-### My initial UML Diagram:
-
-
-```mermaid id="r1a2b3"
-classDiagram
-class Owner {
-    +name
-    +available_time
-    +update_info()
-    +set_available_time()
-}
-
-class Pet {
-    +name
-    +type
-    +update_pet_info()
-}
-
-class Task {
-    +name
-    +duration
-    +priority
-    +update_task()
-    +display_task()
-}
-
-class Scheduler {
-    +list_of_tasks
-    +available_time
-    +add_task()
-    +remove_task()
-    +generate_plan()
-    +sort_tasks_by_priority()
-}
-
-Owner "1" --> "many" Pet : owns
-Pet "1" --> "many" Task : has
-Scheduler "1" --> "many" Task : manages
-Owner "1" --> "1" Scheduler : uses
-```
-
-
-
 **b. Design changes**
 
 - Did your design change during implementation?
@@ -97,12 +54,22 @@ This tradeoff is reasonable because it reduces complexity and keeps the schedule
 **a. How you used AI**
 
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
+
+I used AI tools to help design the UML structure, improve scheduling logic, and debug issues in the implementation. 
+
 - What kinds of prompts or questions were most helpful?
+
+The most useful prompts were those asking for simplification, and debugging help.
 
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
+
+One moment where I did not accept the AI suggestion was when it recommended making the scheduling logic more complex with advanced overlap handling. I chose not to implement it because it would make the system harder to understand and was not required for the project.
+
 - How did you evaluate or verify what the AI suggested?
+
+I verified AI suggestions by comparing them with my actual code and running tests to confirm behavior. If the suggestion added unnecessary complexity or did not match my design goals, I simplified or ignored it.
 
 ---
 
@@ -111,12 +78,22 @@ This tradeoff is reasonable because it reduces complexity and keeps the schedule
 **a. What you tested**
 
 - What behaviors did you test?
+
+I tested task sorting by priority and time, recurring task behavior, conflict detection, and scheduling with limited available time. 
+
 - Why were these tests important?
+
+These tests were important because they confirm that the core scheduling logic works correctly and handles real usage scenarios.
 
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
+
+I am highly confident that my scheduler works correctly because all major behaviors passed testing and match the expected logic.
+
 - What edge cases would you test next if you had more time?
+
+If I had more time, I would test more edge cases such as overlapping durations, large numbers of tasks, and unusual recurrence patterns.
 
 ---
 
@@ -126,10 +103,16 @@ This tradeoff is reasonable because it reduces complexity and keeps the schedule
 
 - What part of this project are you most satisfied with?
 
+I am most satisfied with the scheduling logic because it correctly balances priority and available time while still being simple and readable.
+
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
 
+If I had another iteration, I would improve conflict detection to handle overlapping time ranges instead of only exact matches. I would also improve the UI to make task input more interactive.
+
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+I learned that designing a system is easier when you start simple and gradually add features. I also learned that AI is helpful for generating ideas and debugging, but the final decisions should focus on keeping the system simple and easy to understand.

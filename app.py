@@ -1,144 +1,282 @@
 import streamlit as st
 from pawpal_system import Owner, Pet, Task, Scheduler
+from agent.scheduler_agent import SchedulerAgent
+from evaluator.evaluator import Evaluator
 
-st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
+st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="wide")
 
-st.title("🐾 PawPal+")
+# ─────────────────────────────────────────────
+# SIDEBAR NAVIGATION 
+# ─────────────────────────────────────────────
+st.sidebar.title("🐾 PawPal+")
 
+page = st.sidebar.radio(
+    "Navigation",
+    ["🏠 Dashboard", "👤 Owner","🐶 Pets", "📋 Tasks", "🧠 AI Scheduler", ]
+)
+
+# ─────────────────────────────────────────────
+# STATE
+# ─────────────────────────────────────────────
 if "owner" not in st.session_state:
-    st.session_state.owner = Owner("Jordan", available_time=60)
+    st.session_state.owner = Owner("Edale", available_time=60)
 
 if "scheduler" not in st.session_state:
     st.session_state.scheduler = Scheduler(st.session_state.owner)
 
-st.markdown(
-    """
-Welcome to the PawPal+ starter app.
-
-This file is intentionally thin. It gives you a working Streamlit app so you can start quickly,
-but **it does not implement the project logic**. Your job is to design the system and build it.
-
-Use this app as your interactive demo once your backend classes/functions exist.
-"""
-)
-
-with st.expander("Scenario", expanded=True):
-    st.markdown(
-        """
-**PawPal+** is a pet care planning assistant. It helps a pet owner plan care tasks
-for their pet(s) based on constraints like time, priority, and preferences.
-
-You will design and implement the scheduling logic and connect it to this Streamlit UI.
-"""
-    )
-
-with st.expander("What you need to build", expanded=True):
-    st.markdown(
-        """
-At minimum, your system should:
-- Represent pet care tasks (what needs to happen, how long it takes, priority)
-- Represent the pet and the owner (basic info and preferences)
-- Build a plan/schedule for a day that chooses and orders tasks based on constraints
-- Explain the plan (why each task was chosen and when it happens)
-"""
-    )
-
-st.divider()
-
-st.subheader("Quick Demo Inputs (UI only)")
-owner_name = st.text_input("Owner name", value="Jordan")
-pet_name = st.text_input("Pet name", value="Mochi")
-species = st.selectbox("Species", ["dog", "cat", "other"])
-
-if st.button("Add pet"):
-    new_pet = Pet(pet_name, species)
-    st.session_state.owner.add_pet(new_pet)
-    st.session_state.scheduler = Scheduler(st.session_state.owner)
-
-if st.session_state.owner.pets:
-    st.write("Pets:")
-    for pet in st.session_state.owner.pets:
-        st.write(pet.name)
-
-st.markdown("### Tasks")
-st.caption("Add a few tasks. In your final version, these should feed into your scheduler.")
-
 if "tasks" not in st.session_state:
     st.session_state.tasks = []
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    task_title = st.text_input("Task title", value="Morning walk")
-with col2:
-    duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
-with col3:
-    priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
-
-if st.button("Add task"):
-    priority_map = {"low": 1, "medium": 2, "high": 3}
-
-    task = Task(
-        task_title,
-        int(duration),
-        priority_map[priority]
-    )
-
-    st.session_state.tasks.append(task)
-    st.session_state.scheduler.add_task(task)
-
-if st.session_state.tasks:
-    st.write("Current tasks:")
-
-    display_tasks = [
-        {
-            "Task": t.name,
-            "Duration": t.duration,
-            "Priority": t.priority
-        }
-        for t in st.session_state.tasks
-    ]
-
-    st.table(display_tasks)
-else:
-    st.info("No tasks yet. Add one above.")
-
-st.divider()
-
-st.subheader("Build Schedule")
-st.caption("This button should call your scheduling logic once you implement it.")
-
-if st.button("Generate schedule"):
-    scheduler = st.session_state.scheduler
-
-    plan = scheduler.generate_plan()
-    conflicts = scheduler.detect_conflicts()
-
-    if conflicts:
-        st.warning("⚠ Conflicts detected (same time tasks exist).")
-
-    if plan:
-        st.success("Schedule generated successfully!")
-
-        st.write("### Your Plan")
-        st.table([
-            {
-                "Task": t.name,
-                "Duration": t.duration,
-                "Priority": t.priority
-            }
-            for t in plan
-        ])
-
-        st.write(f"Total time used: {sum(t.duration for t in plan)} min")
-    else:
-        st.info("No tasks fit into available time or no tasks exist.")
+# ─────────────────────────────────────────────
+# DASHBOARD
+# ─────────────────────────────────────────────
+if page == "🏠 Dashboard":
 
     st.markdown(
-        """
-Suggested approach:
-1. Design your UML (draft).
-2. Create class stubs (no logic).
-3. Implement scheduling behavior.
-4. Connect your scheduler here and display results.
-"""
+        "<h1 style='text-align:center;'>🐾 PawPal+</h1>",
+        unsafe_allow_html=True
     )
+
+    st.info("AI Pipeline: RAG → Scheduler Agent → Evaluator → Output")
+
+    st.write("")
+
+    with st.container(border=True):
+        st.subheader("Owner Information")
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Owner", st.session_state.owner.name)
+        col2.metric("Available Time", f"{st.session_state.owner.available_time} min")
+        col3.metric("Pets", len(st.session_state.owner.pets))
+
+# ─────────────────────────────────────────────
+# OWNER PAGE
+# ─────────────────────────────────────────────
+elif page == "👤 Owner":
+
+    st.title("👤 Owner Settings")
+
+    with st.container(border=True):
+
+        new_name = st.text_input(
+            "Owner Name",
+            placeholder="Update owner name"
+        )
+
+        new_time = st.number_input(
+            "Available Time (min)",
+            min_value=60
+        )
+
+        if st.button("Update Owner"):
+            if new_name:
+                st.session_state.owner.name = new_name
+
+            if new_time:
+                st.session_state.owner.available_time = new_time
+
+            st.success("Owner updated")
+
+# ─────────────────────────────────────────────
+# PETS PAGE
+# ─────────────────────────────────────────────
+elif page == "🐶 Pets":
+
+    st.title("🐶 Pets")
+
+    with st.container(border=True):
+
+        pet_name = st.text_input(
+            "Pet Name",
+            placeholder="Add pet's name",
+            key="pet_name"
+        )
+
+        species = st.selectbox(
+            "Species",
+            ["dog", "cat", "other"],
+            index=None,
+            key="species"
+        )
+
+        if st.button("Add Pet"):
+            if pet_name and species:
+                st.session_state.owner.add_pet(Pet(pet_name, species))
+                st.success("Pet added")
+                st.rerun()
+
+    st.write("---")
+
+    for i, pet in enumerate(st.session_state.owner.pets):
+        col1, col2, col3 = st.columns([3, 2, 1])
+
+        with col1:
+            st.write(pet.name)
+
+        with col2:
+            st.write(pet.pet_type)
+
+        with col3:
+            if st.button("🗑️", key=f"del_pet_{i}"):
+                st.session_state.owner.pets.pop(i)
+                st.rerun()
+
+# ─────────────────────────────────────────────
+# TASKS PAGE
+# ─────────────────────────────────────────────
+elif page == "📋 Tasks":
+
+    st.title("📋 Tasks")
+
+    with st.container(border=True):
+
+        task_type = st.selectbox(
+            "Task Type",
+            ["Feed", "Walk", "Groom", "Play", "Vet Visit", "Other"],
+            index=None,
+            placeholder="Select task type",
+            key="task_type"
+        )
+
+        if task_type == "Other":
+            custom_task = st.text_input("Custom Task Name", key="custom_task")
+        else:
+            custom_task = task_type
+
+        priority = st.selectbox("Priority", ["low", "medium", "high"], index=None, key="priority")
+        time = st.text_input("Time", placeholder="HH:MM", key="time")
+        duration = st.number_input("Duration", 1, 240, 30, key="duration")
+
+        if st.button("Add Task"):
+            if custom_task and priority:
+
+                pmap = {"low": 1, "medium": 2, "high": 3}
+
+                # Normalize time input once so all comparisons and storage are consistent
+                clean_time = time.strip()
+
+                # Issue 0 (FIX): Validate time format
+                if not clean_time or ":" not in clean_time:
+                    st.error("Invalid time format. Use HH:MM")
+                    st.stop()
+
+                # Issue 1: Duplicate time — compare against normalized stored times
+                existing_times = [t.time for t in st.session_state.tasks]
+                if clean_time and clean_time in existing_times:
+                    st.error("A task already exists at this time.")
+
+                # Issue 2: Available time — cast to int to avoid float precision issues
+                elif int(sum(t.duration for t in st.session_state.tasks)) + int(duration) > int(st.session_state.owner.available_time):
+                    st.error(f"Cannot add task: total duration would exceed owner's available time ({st.session_state.owner.available_time} min).")
+
+                else:
+                    task = Task(custom_task, int(duration), pmap[priority], time=clean_time)
+                    st.session_state.tasks.append(task)
+                    st.session_state.scheduler.add_task(task)
+                    st.success("Task added")
+                    st.rerun()
+
+    st.write("---")
+
+    for i, t in enumerate(st.session_state.tasks):
+        col1, col2, col3 = st.columns([3, 2, 1])
+
+        with col1:
+            st.write(t.name)
+
+        with col2:
+            st.write(t.time)
+
+        with col3:
+            if st.button("🗑️", key=f"del_task_{i}"):
+                st.session_state.tasks.pop(i)
+                st.rerun()
+
+# ─────────────────────────────────────────────
+# AI SCHEDULER PAGE (UPDATED)
+# ─────────────────────────────────────────────
+elif page == "🧠 AI Scheduler":
+
+    st.title("🧠 AI Scheduler")
+
+    st.info("Pipeline: UI → RAG → Scheduler Agent → Evaluator → Output")
+
+    scheduler = st.session_state.scheduler
+    agent = SchedulerAgent()
+
+    plan = st.session_state.tasks
+
+    if not plan:
+        st.warning("No tasks available")
+        st.stop()
+
+    # ─────────────────────────────────────
+    # ORIGINAL SCHEDULE
+    # ─────────────────────────────────────
+    st.markdown("### 📌 Original Schedule")
+
+    st.table([
+        {"Task": t.name, "Time": t.time if t.time else "No time set"}
+        for t in plan
+    ])
+
+    # ─────────────────────────────────────
+    # GENERATE OPTIMIZED
+    # ─────────────────────────────────────
+    if st.button("Generate Optimized Schedule"):
+
+        user_input = " ".join([t.name for t in plan])
+        result = agent.run(user_input, plan)
+
+        st.session_state.optimized_result = result
+
+    # ─────────────────────────────────────
+    # SHOW OPTIMIZED
+    # ─────────────────────────────────────
+    if "optimized_result" in st.session_state:
+
+        result = st.session_state.optimized_result
+
+        st.markdown("### 🧠 Optimized Schedule")
+
+        st.table([
+            {"Task": t.name, "Time": t.time if t.time else "No time set"}
+            for t in result["fixed_schedule"]
+        ])
+
+        st.markdown("### ⚠️ Evaluation")
+
+        st.success(f"Confidence Score: {result['evaluation']['confidence']}%")
+
+        if result["evaluation"]["issues"]:
+            for issue in result["evaluation"]["issues"]:
+                st.write("• " + issue)
+
+        st.markdown("### 💡 Explanations")
+
+        for exp in result["explanations"]:
+            st.write("• " + exp)
+
+        st.markdown("### 📚 RAG Rules Used")
+
+        for rule in result["rules_used"]:
+            st.write("• " + rule)
+
+        st.write("---")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if st.button("✅ Accept Optimized Schedule"):
+
+                st.session_state.tasks = result["fixed_schedule"]
+                del st.session_state.optimized_result
+                st.success("Optimized schedule accepted")
+                st.rerun()
+
+        with col2:
+            if st.button("↩️ Keep Original Schedule"):
+
+                del st.session_state.optimized_result
+                st.info("Kept original schedule")
+                st.rerun()

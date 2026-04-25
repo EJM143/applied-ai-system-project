@@ -100,7 +100,7 @@ class Task:
             self.frequency = frequency
 
     def reschedule(self):
-        """Return a new Task scheduled for the next occurrence based on frequency."""
+        """Create a new Task for the next scheduled occurrence."""
         if not self.date or self.frequency not in ("daily", "weekly"):
             return None
         current = datetime.strptime(self.date, "%Y-%m-%d")
@@ -149,8 +149,11 @@ class Scheduler:
         return sorted(self.list_of_tasks, key=lambda t: t.priority, reverse=True)
 
     def sort_by_time(self):
-        """Return tasks sorted by scheduled start time (HH:MM), tasks with no time go last."""
-        return sorted(self.list_of_tasks, key=lambda t: t.time if t.time else "23:59")
+        """Return tasks sorted by scheduled start time (HH:MM), tasks with no/invalid time go last."""
+        return sorted(
+            self.list_of_tasks,
+            key=lambda t: t.time if t.time and ":" in t.time else "23:59"
+        )
 
     def filter_by_pet(self, pet_name):
         """Return all tasks belonging to the pet with the given name."""
@@ -168,26 +171,10 @@ class Scheduler:
                 next_tasks.append(next_task)
         return next_tasks
 
-    def detect_conflicts(self):
-        """Return a list of tasks that share the same scheduled time, and print a warning for each."""
-        seen = {}
-        conflicts = []
-        for task in self.list_of_tasks:
-            if not task.time:
-                continue
-            if task.time in seen:
-                conflicts.append(task)
-                if seen[task.time] not in conflicts:
-                    conflicts.append(seen[task.time])
-                print(f"[WARNING] Conflict at {task.time}: '{seen[task.time].name}' and '{task.name}'")
-            else:
-                seen[task.time] = task
-        return conflicts
-
     def generate_plan(self):
         """
-        Build a daily plan by fitting tasks (high priority first) into
-        the owner's available time. Skips already-completed tasks.
+            Build a daily plan using high-priority tasks within available time.
+        Skips completed tasks.
         """
         self.plan = []
         time_remaining = self.owner.available_time
